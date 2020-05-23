@@ -1,0 +1,14 @@
+__pycache__
+*.py[cod]
+
+bin/
+venv/
+flask_session/
+
+*.DS_Store
+
+geckodriver.log
+.cache/
+
+*.scss
+*.map
