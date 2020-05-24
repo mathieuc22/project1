@@ -10,12 +10,12 @@
     <form action="{{ url_for('books') }}" method="post">
 
       <div class="input-group mb-3">
-        <input class="form-control" name="date" placeholder="Search by date">
+        <input class="form-control" name="search" placeholder="Search by isbn, title, author or year">
         <div class="input-group-append">
           <button class="btn btn-outline-primary">Search</button>
         </div>
       </div>
-
+      
     </form>
 
 {% endblock %}

@@ -1,6 +1,15 @@
-CREATE TABLE flights (
+
+CREATE TABLE users (
     id SERIAL PRIMARY KEY,
-    origin VARCHAR NOT NULL,
-    destination VARCHAR NOT NULL,
-    duration INTEGER NOT NULL
+    name VARCHAR NOT NULL,
+    email VARCHAR NOT NULL
+);
+
+CREATE TABLE reviews (
+    id SERIAL PRIMARY KEY,
+    rating DECIMAL NOT NULL,
+    content VARCHAR NOT NULL,
+    date TIMESTAMP NOT NULL,
+    isbn VARCHAR REFERENCES books,
+    user_id INTEGER REFERENCES users
 );

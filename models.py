@@ -18,6 +18,8 @@ class Users(db.Model):
 class Reviews(db.Model):
     __tablename__ = "reviews"
     id = db.Column(db.Integer, primary_key=True)
-    content
+    rating = db.Column(db.Integer, nullable=False)
+    content = db.Column(db.String, nullable=False)
+    date = db.Column(db.String, nullable=False)
     book = db.Column(db.Integer, db.ForeignKey("books.id"), nullable=False)
     user = db.Column(db.Integer, db.ForeignKey("users.id"),nullable=False)
