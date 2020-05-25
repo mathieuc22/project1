@@ -1,0 +1,35 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Register
+{% endblock %}
+
+{% block body %}
+
+<div class="text-center">
+  <form class="form-signin needs-validation" action="{{ url_for('register') }}" method="POST" novalidate>
+    <h1 class="h3 mb-3 font-weight-normal">Please register</h1>
+
+    <input type="username" class="form-control mb-2" name="username" placeholder="Username" required autofocus>
+    <div class="invalid-feedback">
+      Please choose a username.
+    </div>
+
+    <input type="email" class="form-control mb-2" name="email" placeholder="Email" required>
+    <div class="invalid-feedback">
+      Please choose a valid Email.
+    </div>
+
+    <input type="password" class="form-control mb-2" name="password" placeholder="Password" required>
+    <div class="invalid-feedback">
+      Please choose a password.
+    </div>
+
+    <button class="btn btn-primary btn-block" type="submit">Register</button>
+
+  </form>
+
+  <p>You already have an account <a href="{{ url_for('login') }}">signin</a>.</p>
+</div>
+
+{% endblock %}
