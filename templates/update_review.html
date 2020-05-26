@@ -1,0 +1,29 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Review
+{% endblock %}
+
+{% block body %}
+    <h1>Update review</h1>
+    <a href="javascript:history.back()">Go Back</a>
+    
+    <form class="needs-validation" action="{{ url_for('update_review', review_id=review.id) }}" method="post" novalidate>
+      <input type = hidden class="form-control" name="isbn" placeholder="ISBN" value={{ review.isbn }}>
+      <div class="form-group">
+        <label>Rating</label>
+        <input class="form-control" name="rating" placeholder="Rating" value={{review.rating}} required>
+        <div class="invalid-feedback">
+          Please rate.
+        </div>
+        <label>Review</label>
+        <textarea class="form-control" name="content" placeholder="Content" rows="3" required>{{review.content}}</textarea>
+        <div class="invalid-feedback">
+          Please add content.
+        </div>
+        <button class="btn btn-primary" type="submit">Update the review</button>
+      </div>
+
+    </form>
+
+{% endblock %}

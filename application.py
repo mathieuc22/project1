@@ -1,7 +1,7 @@
 import os
 import requests
 
-from flask import Flask, render_template, request, session, flash
+from flask import Flask, render_template, request, session, flash, redirect, url_for
 from flask_session import Session
 from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
@@ -114,7 +114,7 @@ def books():
             books = db.execute("SELECT * FROM books WHERE LOWER(title) LIKE LOWER(:search) OR  LOWER(author) LIKE LOWER(:search) OR  LOWER(isbn) LIKE LOWER(:search) OR  CAST(year AS TEXT) LIKE :search",
                     {"search": '%'+search+'%'}).fetchall()
             nb_books = len(books)
-            print(nb_books)
+            
             if nb_books == 0:
                 message = 'No book found'
             else:
@@ -124,84 +124,89 @@ def books():
             books = db.execute("SELECT * FROM books fetch first 10 rows only").fetchall()
             return render_template("books.html", books=books)
 
-@app.route("/books/<string:book_isbn>")
+@app.route("/book/<string:book_isbn>", methods=["GET", "POST"])
 def book(book_isbn):
     if not session.get('logged_in'):
         return render_template('login.html')
     else:
 
+        # Get reviews from goodread API
         res = requests.get("https://www.goodreads.com/book/review_counts.json",
                         params={"key": "GtG9odDoZNEWxekOhsmMA", "isbns": book_isbn})
         if res.status_code != 200:
             raise Exception("ERROR: API request unsuccessful.")
         data = res.json()
-
+        
         ratings_count = data["books"][0]["ratings_count"]
         average_rating = data["books"][0]["average_rating"]
-
-        reviews = db.execute("SELECT * FROM reviews").fetchall()
 
         # Make sure book exists.
         book = db.execute("SELECT * FROM books WHERE isbn = :isbn", {"isbn": book_isbn}).fetchone()
         if book is None:
             return render_template("error.html", message="No such book.")
+        
+        user_name = session.get('user_name') or None
+        user_id = session.get('user_id') or None
+        review_by_user = db.execute("SELECT * FROM reviews WHERE isbn = :isbn AND user_id = :user_id", {"isbn": book_isbn, "user_id": user_id}).fetchone()
 
-        user_name = db.execute("SELECT name FROM users JOIN reviews ON reviews.user_id = users.id;").fetchone()
-        return render_template("book.html", book=book, ratings_count=ratings_count, average_rating=average_rating, reviews=reviews, user_name=user_name)
+        if request.method == 'POST':
+            # Get form information.
+            rating = request.form.get("rating") or None
+            content = request.form.get("content") or None
 
-@app.route("/review", methods=["POST"])
-def review():
-    if not session.get('logged_in'):
-        return render_template('login.html')
-    else:
-        # Get form information.
-        rating = request.form.get("rating")
-        content = request.form.get("content")
-        isbn = request.form.get("isbn")
-        user_id = session.get('user_id')
+            if review_by_user:
+                flash("You've reviewed this book already")
+            elif all(v is not None for v in [rating, content, book_isbn, user_id]):
+                db.execute("INSERT INTO reviews (rating, content, date, isbn, user_id) VALUES (:rating, :content, current_timestamp, :isbn, :user_id)",
+                    {"rating": rating, "content": content, "isbn": book_isbn, "user_id": user_id})
+                db.commit()
+                review_by_user = True
+            else:
+                flash("Please correct data")
 
-        book = db.execute("SELECT * FROM books WHERE isbn = :isbn", {"isbn": isbn}).fetchone()
+        # Get reviews for the book
+        reviews = db.execute("SELECT reviews.id, date, rating, content, name FROM reviews JOIN users ON users.id = reviews.user_id WHERE isbn = :isbn", {"isbn": book_isbn}).fetchall()
 
-        # if not book:
-        #     flash("No such book.")
-        #     return render_template("error.html")
-        # elif all(v is not None for v in [username, email, password]):
-        #     db.execute("INSERT INTO users (name, email, password) VALUES (:username, :email, :password)",
-        #     {"username": username, "email": email, "password": password})
-        #     db.commit()
-        #     logged_in = db.execute("SELECT * FROM users WHERE LOWER(name) = LOWER(:username)",
-        #         {"username": username}).fetchone()
-        #     session['logged_in'] = True
-        #     session['user_id'] = logged_in[0]
-        #     session['user_name'] = logged_in[1]
-        #     #redirect to home
-        #     flash("Registration Successful. Your are logged in.")
-        #     return render_template("index.html")
-        # else:
-        #     flash("Please correct data")
-        #     return render_template("register.html")
-        # Make sure the book exists.
-        if db.execute("SELECT * FROM books WHERE isbn = :isbn", {"isbn": isbn}).rowcount == 0:
-            flash("You're already logged in. Please log out.")
-            return render_template("index.html")
-          return render_template("error.html", message="No such book with that isbn.")
-        db.execute("INSERT INTO reviews (rating, content, date, isbn, user_id) VALUES (:rating, :content, current_timestamp, :isbn, :user_id)",
-              {"rating": rating, "content": content, "isbn": isbn, "user_id": user_id})
-        db.commit()
-        return book(isbn)
+        return render_template("book.html",
+                        book=book,
+                        reviews=reviews,
+                        ratings_count=ratings_count,
+                        average_rating=average_rating,
+                        review_by_user=review_by_user,
+                        user_name=user_name
+                        )
 
 @app.route("/delete_review", methods=["POST"])
 def delete_review():
     if not session.get('logged_in'):
         return render_template('login.html')
     else:
-        book_isbn = str(request.form.get("book_isbn"))
+        book_isbn = request.form.get("book_isbn") or None
         user_id = session.get('user_id')
-
+        
         db.execute("DELETE FROM reviews WHERE user_id = :user_id AND isbn = :isbn",
             {"user_id": user_id, "isbn": book_isbn})
         db.commit()
-        return render_template("success.html")
+        return redirect(url_for('book', book_isbn=book_isbn))
+
+@app.route("/review/<int:review_id>", methods=["GET", "POST"])
+def update_review(review_id):
+    if not session.get('logged_in'):
+        return render_template('login.html')
+    else:
+        user_id = session.get('user_id')
+        if request.method == 'POST':
+            book_isbn = request.form.get("book_isbn") or None
+            rating = request.form.get("rating") or None
+            content = request.form.get("content") or None
+
+            db.execute("UPDATE reviews SET date = current_timestamp, rating = :rating, content = :content WHERE user_id = :user_id AND isbn = :isbn",
+                {"rating": rating, "content": content, "user_id": user_id, "isbn": book_isbn})
+            db.commit()
+            return redirect(url_for('book', book_isbn=book_isbn))
+        else:
+            review = db.execute("SELECT * FROM reviews WHERE id = :review_id AND user_id = :user_id", {"review_id": review_id, "user_id": user_id}).fetchone()
+            return render_template('update_review.html', review=review)
 
 @app.route("/admin", methods=['GET', 'POST'])
 def admin():
