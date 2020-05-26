@@ -28,3 +28,28 @@
   border-top-left-radius: 0;
   border-top-right-radius: 0;
 }
+
+
+.bg-img {
+  /* The image used */
+  background-image: url('/static/images/books.jpg');
+
+  /* Control the height of the image */
+  min-height: 380px;
+
+  /* Center and scale the image nicely */
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  position: relative;
+}
+
+/* Add styles to the form container */
+.login {
+  position: absolute;
+  right: 0;
+  max-width: 80%;
+  margin: 20px;
+  padding: 16px;
+  background-color: white;
+}

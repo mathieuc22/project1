@@ -129,7 +129,6 @@ def book(book_isbn):
     if not session.get('logged_in'):
         return render_template('login.html')
     else:
-        """Lists details about a single book."""
 
         res = requests.get("https://www.goodreads.com/book/review_counts.json",
                         params={"key": "GtG9odDoZNEWxekOhsmMA", "isbns": book_isbn})
@@ -161,13 +160,35 @@ def review():
         isbn = request.form.get("isbn")
         user_id = session.get('user_id')
 
+        book = db.execute("SELECT * FROM books WHERE isbn = :isbn", {"isbn": isbn}).fetchone()
+
+        # if not book:
+        #     flash("No such book.")
+        #     return render_template("error.html")
+        # elif all(v is not None for v in [username, email, password]):
+        #     db.execute("INSERT INTO users (name, email, password) VALUES (:username, :email, :password)",
+        #     {"username": username, "email": email, "password": password})
+        #     db.commit()
+        #     logged_in = db.execute("SELECT * FROM users WHERE LOWER(name) = LOWER(:username)",
+        #         {"username": username}).fetchone()
+        #     session['logged_in'] = True
+        #     session['user_id'] = logged_in[0]
+        #     session['user_name'] = logged_in[1]
+        #     #redirect to home
+        #     flash("Registration Successful. Your are logged in.")
+        #     return render_template("index.html")
+        # else:
+        #     flash("Please correct data")
+        #     return render_template("register.html")
         # Make sure the book exists.
         if db.execute("SELECT * FROM books WHERE isbn = :isbn", {"isbn": isbn}).rowcount == 0:
+            flash("You're already logged in. Please log out.")
+            return render_template("index.html")
           return render_template("error.html", message="No such book with that isbn.")
         db.execute("INSERT INTO reviews (rating, content, date, isbn, user_id) VALUES (:rating, :content, current_timestamp, :isbn, :user_id)",
               {"rating": rating, "content": content, "isbn": isbn, "user_id": user_id})
         db.commit()
-        return render_template("success.html")
+        return book(isbn)
 
 @app.route("/delete_review", methods=["POST"])
 def delete_review():
