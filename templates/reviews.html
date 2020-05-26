@@ -1,0 +1,37 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Books
+{% endblock %}
+
+{% block body %}
+    <h1>Reviews</h1>
+
+    <p>{{ message }}</p>
+
+    <table class="table">
+      <thead>
+        <tr>
+          <th scope="col">Book</th>
+          <th scope="col">User</th>
+          <th scope="col">Rating</th>
+          <th scope="col">Content</th>
+          <th scope="col">Date</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for review in reviews %}
+        <tr>
+          <td><a href="{{ url_for('book', book_isbn=review.isbn) }}">{{ review.title }}
+          </a></td>
+          <td><a href="{{ url_for('reviews_by_user', user=review.name) }}">{{review.name}}
+          </a></td>
+          <td>{{review.rating}}</td>
+          <td>{{review.content}}</td>
+          <td>{{review.date}}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+{% endblock %}

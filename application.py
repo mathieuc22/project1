@@ -114,15 +114,21 @@ def books():
             books = db.execute("SELECT * FROM books WHERE LOWER(title) LIKE LOWER(:search) OR  LOWER(author) LIKE LOWER(:search) OR  LOWER(isbn) LIKE LOWER(:search) OR  CAST(year AS TEXT) LIKE :search",
                     {"search": '%'+search+'%'}).fetchall()
             nb_books = len(books)
-            
+
+            session['books'] = books
+
             if nb_books == 0:
                 message = 'No book found'
             else:
                 message = f'Found {nb_books} book(s)'
             return render_template("books.html", books=books, search=search, message=message)
         else:
-            books = db.execute("SELECT * FROM books fetch first 10 rows only").fetchall()
-            return render_template("books.html", books=books)
+            books = session.get('books') or None
+            if books is None:
+                books = db.execute("SELECT * FROM books").fetchall()
+            nb_books = len(books)
+            message = f'Found {nb_books} book(s)'
+            return render_template("books.html", message=message, books=books)
 
 @app.route("/book/<string:book_isbn>", methods=["GET", "POST"])
 def book(book_isbn):
@@ -130,30 +136,30 @@ def book(book_isbn):
         return render_template('login.html')
     else:
 
+        # Make sure book exists.
+        book = db.execute("SELECT * FROM books WHERE isbn = :isbn", {"isbn": book_isbn}).fetchone()
+        if book is None:
+            return render_template("error.html", message="No such book.")
+
         # Get reviews from goodread API
         res = requests.get("https://www.goodreads.com/book/review_counts.json",
                         params={"key": "GtG9odDoZNEWxekOhsmMA", "isbns": book_isbn})
         if res.status_code != 200:
             raise Exception("ERROR: API request unsuccessful.")
         data = res.json()
-        
         ratings_count = data["books"][0]["ratings_count"]
         average_rating = data["books"][0]["average_rating"]
 
-        # Make sure book exists.
-        book = db.execute("SELECT * FROM books WHERE isbn = :isbn", {"isbn": book_isbn}).fetchone()
-        if book is None:
-            return render_template("error.html", message="No such book.")
-        
+        # Get some usefull variables
         user_name = session.get('user_name') or None
         user_id = session.get('user_id') or None
         review_by_user = db.execute("SELECT * FROM reviews WHERE isbn = :isbn AND user_id = :user_id", {"isbn": book_isbn, "user_id": user_id}).fetchone()
 
+        # Insert a new review
         if request.method == 'POST':
             # Get form information.
             rating = request.form.get("rating") or None
             content = request.form.get("content") or None
-
             if review_by_user:
                 flash("You've reviewed this book already")
             elif all(v is not None for v in [rating, content, book_isbn, user_id]):
@@ -165,7 +171,7 @@ def book(book_isbn):
                 flash("Please correct data")
 
         # Get reviews for the book
-        reviews = db.execute("SELECT reviews.id, date, rating, content, name FROM reviews JOIN users ON users.id = reviews.user_id WHERE isbn = :isbn", {"isbn": book_isbn}).fetchall()
+        reviews = db.execute("SELECT reviews.id, reviews.date, reviews.rating, reviews.content, users.name FROM reviews JOIN users ON users.id = reviews.user_id WHERE isbn = :isbn", {"isbn": book_isbn}).fetchall()
 
         return render_template("book.html",
                         book=book,
@@ -183,7 +189,7 @@ def delete_review():
     else:
         book_isbn = request.form.get("book_isbn") or None
         user_id = session.get('user_id')
-        
+
         db.execute("DELETE FROM reviews WHERE user_id = :user_id AND isbn = :isbn",
             {"user_id": user_id, "isbn": book_isbn})
         db.commit()
@@ -205,8 +211,52 @@ def update_review(review_id):
             db.commit()
             return redirect(url_for('book', book_isbn=book_isbn))
         else:
-            review = db.execute("SELECT * FROM reviews WHERE id = :review_id AND user_id = :user_id", {"review_id": review_id, "user_id": user_id}).fetchone()
+            review = db.execute("SELECT reviews.id, reviews.date, reviews.rating, reviews.isbn, reviews.content, books.title FROM reviews JOIN books ON books.isbn = reviews.isbn WHERE id = :review_id AND user_id = :user_id", {"review_id": review_id, "user_id": user_id}).fetchone()
             return render_template('update_review.html', review=review)
+
+@app.route("/books/author/<string:author>")
+def author(author):
+    if not session.get('logged_in'):
+        return render_template('login.html')
+    else:
+        books = db.execute("SELECT * FROM books WHERE LOWER(author) = LOWER(:author)", {"author": author}).fetchall()
+        nb_books = len(books)
+        message = f'Found {nb_books} book(s)'
+        return render_template("books.html", message=message, books=books)
+
+@app.route("/books/year/<int:year>")
+def year(year):
+    if not session.get('logged_in'):
+        return render_template('login.html')
+    else:
+        books = db.execute("SELECT * FROM books WHERE year = :year", {"year": year}).fetchall()
+        nb_books = len(books)
+        message = f'Found {nb_books} book(s)'
+        return render_template("books.html", message=message, books=books)
+
+@app.route("/reviews")
+def reviews():
+    if not session.get('logged_in'):
+        return render_template('login.html')
+    else:
+
+        reviews = db.execute("SELECT reviews.id, reviews.date, reviews.rating, reviews.content, users.name, books.title,  books.isbn FROM reviews JOIN users ON users.id = reviews.user_id JOIN books ON books.isbn = reviews.isbn").fetchall()
+
+        nb_reviews = len(reviews)
+        message = f'Found {nb_reviews} reviews'
+        return render_template("reviews.html", message=message, reviews=reviews)
+
+@app.route("/reviews/<string:user>")
+def reviews_by_user(user):
+    if not session.get('logged_in'):
+        return render_template('login.html')
+    else:
+
+        reviews = db.execute("SELECT reviews.id, reviews.date, reviews.rating, reviews.content, users.name, books.title,  books.isbn FROM reviews JOIN users ON users.id = reviews.user_id JOIN books ON books.isbn = reviews.isbn WHERE users.name = :user", {"user": user}).fetchall()
+
+        nb_reviews = len(reviews)
+        message = f'Found {nb_reviews} reviews'
+        return render_template("reviews.html", message=message, reviews=reviews)
 
 @app.route("/admin", methods=['GET', 'POST'])
 def admin():

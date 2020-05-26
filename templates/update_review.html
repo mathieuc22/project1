@@ -6,8 +6,8 @@
 
 {% block body %}
     <h1>Update review</h1>
-    <a href="javascript:history.back()">Go Back</a>
-    
+    <a href="{{ url_for('book', book_isbn=review.isbn) }}">Go back to {{review.title}}</a>
+
     <form class="needs-validation" action="{{ url_for('update_review', review_id=review.id) }}" method="post" novalidate>
       <input type = hidden class="form-control" name="isbn" placeholder="ISBN" value={{ review.isbn }}>
       <div class="form-group">
@@ -16,13 +16,14 @@
         <div class="invalid-feedback">
           Please rate.
         </div>
+      <div class="form-group">
         <label>Review</label>
         <textarea class="form-control" name="content" placeholder="Content" rows="3" required>{{review.content}}</textarea>
         <div class="invalid-feedback">
           Please add content.
         </div>
-        <button class="btn btn-primary" type="submit">Update the review</button>
       </div>
+        <button class="btn btn-primary" type="submit">Update the review</button>
 
     </form>
 

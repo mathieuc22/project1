@@ -5,18 +5,19 @@
 {% endblock %}
 
 {% block body %}
-    <h1>Book Details</h1>
-    <a href="javascript:history.back()">Go Back</a>
-
-    <div class="card mb-3">
+    <a href="{{ url_for('books') }}">Go back to results</a>
+    <div class="card my-3">
+      <div class="card-header">
+        Book Details
+      </div>
       <div class="row no-gutters">
-        <div class="col-md-4">
+        <div class="col-md-3">
           <img src="http://covers.openlibrary.org/b/isbn/{{ book.isbn }}-M.jpg" class="card-img" alt="{{ book.title }}">
         </div>
         <div class="col-md-8">
           <div class="card-body">
             <h5 class="card-title">{{ book.title }}</h5>
-            <h6 class="card-subtitle">{{ book.author }} - {{ book.year }}</h6>
+            <h6 class="card-subtitle"><a href="{{ url_for('author', author=book.author) }}">{{book.author}}</a> - <a href="{{ url_for('year', year=book.year) }}">{{book.year}}</a></h6>
             <p class="card-text"><small class="text-muted">ISBN: {{ book.isbn }}</small></p>
             <p class="card-text">Number of ratings: {{ ratings_count }}
             <br>Average rating: {{ average_rating }}</p>
@@ -26,25 +27,27 @@
       <div class="card-header">
         Reviews
       </div>
+      <ul class="list-group list-group-flush">
       {% for review in reviews %}
-        <div class="card-body">
+      <li class="list-group-item">
           <h5 class="card-title">{{ review.name }} - rating:{{ review.rating }}</h5>
           <p class="card-text"><small class="text-muted">Posted {{ review.date }}</small></p>
-          <p class="card-text">{{ review.content }}</p>
+          <p class="card-text break">{{ review.content }}</p>
           {% if review.name == user_name %}
           <form action="{{ url_for('delete_review') }}" method="post">
             <div class="btn-group  btn-group-sm" role="group">
-              <input type=hidden value="{{ book.isbn }}" name=book_isbn />          
+              <input type=hidden value="{{ book.isbn }}" name=book_isbn />
               <a class="btn btn-primary" href="{{ url_for('update_review', review_id=review.id) }}" role="button">Update</a>
               <button class="btn btn-primary" type="submit">Delete</button>
             </div>
           </form>
           {% endif %}
-        </div>
+      </li>
       {% endfor %}
-    
+      </ul>
+
     {% if not review_by_user %}
-    
+
     <div class="card-header">
       Make a review
     </div>
@@ -52,17 +55,25 @@
     <form class="needs-validation" action="{{ url_for('book', book_isbn=book.isbn) }}" method="post" novalidate>
       <div class="form-group">
         <label>Rating</label>
-        <input class="form-control" name="rating" placeholder="Rating" required>
+        <select class="form-control" name="rating" required>
+          <option>1</option>
+          <option>2</option>
+          <option>3</option>
+          <option>4</option>
+          <option>5</option>
+        </select>
         <div class="invalid-feedback">
           Please rate.
         </div>
+      </div>
+      <div class="form-group">
         <label>Review</label>
         <textarea class="form-control" name="content" placeholder="Content" rows="3" required></textarea>
         <div class="invalid-feedback">
           Please add content.
         </div>
-        <button class="btn btn-primary" type="submit">Review the book</button>
       </div>
+        <button class="btn btn-primary" type="submit">Review the book</button>
 
     </form>
   </div>

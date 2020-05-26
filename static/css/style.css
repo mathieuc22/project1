@@ -29,6 +29,15 @@
   border-top-right-radius: 0;
 }
 
+.card-img {
+  max-height:200px;
+  width: auto;
+  height: auto;
+}
+
+.break {
+  white-space: pre-wrap;
+}
 
 .bg-img {
   /* The image used */
