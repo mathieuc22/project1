@@ -20,18 +20,36 @@
 
   <body>
     {% if session['logged_in'] %}
-    <nav class="navbar sticky-top navbar-light bg-light">
+    <nav class="navbar sticky-top  navbar-expand-lg navbar-light bg-light">
       <a class="navbar-brand" href="{{ url_for('index') }}">Home</a>
-      <a href="{{ url_for('reviews') }}">Reviews
-      </a>
-      {% if session['user_id'] == 1 %}
-        <a href="{{ url_for('admin') }}">Admin</a>
-      {% endif %}
-      <a href="{{ url_for('logout') }}">Logout</a>
-      Welcome, {{ session['user_name'] }} !
+      <div class="collapse navbar-collapse" id="navbarText">
+        <ul class="navbar-nav mr-auto">
+          {% if session['user_isadmin'] %}
+          <li class="nav-item active">
+            <a class="nav-link" href="{{ url_for('reviews') }}">Reviews</a>
+          </li>
+          <li class="nav-item active">
+            <a class="nav-link" href="{{ url_for('users') }}">Users</a>
+          </li>
+          {% endif %}
+          <li class="nav-item active">
+            <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
+          </li>
+          <li class="nav-item active">
+            <span class="navbar-text">Welcome, {{ session['user_name'] }} !</span>
+          </li>
+        </ul>
+      </div>
+      <form class="form-inline" action="{{ url_for('books') }}" method="post">
+        <div class="input-group mr-sm-2">
+          <input class="form-control" name="search" placeholder="Search by isbn, title, author or year" value="{{ search }}">
+          <div class="input-group-append">
+            <button class="btn btn-outline-primary" type="submit">Search</button>
+          </div>
+        </div>
+      </form>
     </nav>
     {% endif %}
-
 
     <div class="container">
       {% with messages = get_flashed_messages() %}

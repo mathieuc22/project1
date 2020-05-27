@@ -5,8 +5,10 @@
 {% endblock %}
 
 {% block body %}
-    <h1>Reviews</h1>
-
+    <h1>Reviews
+    {% if username %}
+      for {{ username }}
+    {% endif %}</h1>
     <p>{{ message }}</p>
 
     <table class="table">
@@ -24,7 +26,7 @@
         <tr>
           <td><a href="{{ url_for('book', book_isbn=review.isbn) }}">{{ review.title }}
           </a></td>
-          <td><a href="{{ url_for('reviews_by_user', user=review.name) }}">{{review.name}}
+          <td><a href="{{ url_for('reviews_by_user', user_id=review.user_id) }}">{{review.name}}
           </a></td>
           <td>{{review.rating}}</td>
           <td>{{review.content}}</td>

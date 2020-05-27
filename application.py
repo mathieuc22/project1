@@ -21,7 +21,6 @@ Session(app)
 engine = create_engine(os.getenv("DATABASE_URL"))
 db = scoped_session(sessionmaker(bind=engine))
 
-
 @app.route("/")
 def index():
     if not session.get('logged_in'):
@@ -79,20 +78,21 @@ def login():
                     {"username": username, "password": password}).fetchone()
 
             if logged_in:
-                session['logged_in'] = True
-                session['user_id'] = logged_in[0]
-                session['user_name'] = logged_in[1]
+                session['logged_in'] = logged_in
+                session['user_id'] = logged_in.id
+                session['user_name'] = logged_in.name
+                session['user_isadmin'] = logged_in.isadmin
             else:
                  flash("Please try again or register.")
-                 return render_template("login.html")
-            return render_template("index.html")
+                 return render_template("login.html") 
+            return redirect(url_for('index'))
         else:
-            return render_template("login.html")
+            return redirect(url_for('index'))
 
 @app.route("/logout")
 def logout():
     session['logged_in'] = False
-    return index()
+    return redirect(url_for('login'))
 
 @app.route("/delete_user", methods=['POST'])
 def delete_user():
@@ -109,6 +109,7 @@ def books():
     else:
         if request.method == 'POST':
             search = request.form.get("search")
+            print(search)
 
             # Search SQL
             books = db.execute("SELECT * FROM books WHERE LOWER(title) LIKE LOWER(:search) OR  LOWER(author) LIKE LOWER(:search) OR  LOWER(isbn) LIKE LOWER(:search) OR  CAST(year AS TEXT) LIKE :search",
@@ -171,7 +172,7 @@ def book(book_isbn):
                 flash("Please correct data")
 
         # Get reviews for the book
-        reviews = db.execute("SELECT reviews.id, reviews.date, reviews.rating, reviews.content, users.name FROM reviews JOIN users ON users.id = reviews.user_id WHERE isbn = :isbn", {"isbn": book_isbn}).fetchall()
+        reviews = db.execute("SELECT reviews.id, to_char(reviews.date, 'DD/MM/YY') as date, reviews.rating, reviews.content, users.name FROM reviews JOIN users ON users.id = reviews.user_id WHERE isbn = :isbn", {"isbn": book_isbn}).fetchall()
 
         return render_template("book.html",
                         book=book,
@@ -202,7 +203,7 @@ def update_review(review_id):
     else:
         user_id = session.get('user_id')
         if request.method == 'POST':
-            book_isbn = request.form.get("book_isbn") or None
+            book_isbn = request.form.get("isbn") or None
             rating = request.form.get("rating") or None
             content = request.form.get("content") or None
 
@@ -239,48 +240,47 @@ def reviews():
     if not session.get('logged_in'):
         return render_template('login.html')
     else:
-
-        reviews = db.execute("SELECT reviews.id, reviews.date, reviews.rating, reviews.content, users.name, books.title,  books.isbn FROM reviews JOIN users ON users.id = reviews.user_id JOIN books ON books.isbn = reviews.isbn").fetchall()
-
+        reviews = db.execute("SELECT reviews.id, to_char(reviews.date, 'DD/MM/YY') as date, reviews.rating, reviews.content, reviews.user_id, users.name, books.title,  books.isbn FROM reviews JOIN users ON users.id = reviews.user_id JOIN books ON books.isbn = reviews.isbn").fetchall()
         nb_reviews = len(reviews)
         message = f'Found {nb_reviews} reviews'
         return render_template("reviews.html", message=message, reviews=reviews)
 
-@app.route("/reviews/<string:user>")
-def reviews_by_user(user):
+@app.route("/reviews/<int:user_id>")
+def reviews_by_user(user_id):
     if not session.get('logged_in'):
         return render_template('login.html')
     else:
-
-        reviews = db.execute("SELECT reviews.id, reviews.date, reviews.rating, reviews.content, users.name, books.title,  books.isbn FROM reviews JOIN users ON users.id = reviews.user_id JOIN books ON books.isbn = reviews.isbn WHERE users.name = :user", {"user": user}).fetchall()
-
+        reviews = db.execute("SELECT reviews.id, to_char(reviews.date, 'DD/MM/YY') as date, reviews.rating, reviews.content, reviews.user_id, users.name, books.title,  books.isbn FROM reviews JOIN users ON users.id = reviews.user_id JOIN books ON books.isbn = reviews.isbn WHERE reviews.user_id = :user_id", {"user_id": user_id}).fetchall()
+        username = db.execute("SELECT users.name FROM users JOIN reviews ON users.id = reviews.user_id WHERE reviews.user_id = :user_id", {"user_id": user_id}).fetchone()
         nb_reviews = len(reviews)
         message = f'Found {nb_reviews} reviews'
-        return render_template("reviews.html", message=message, reviews=reviews)
+        return render_template("reviews.html", username=username.name, message=message, reviews=reviews)
 
-@app.route("/admin", methods=['GET', 'POST'])
-def admin():
+@app.route("/users", methods=['GET', 'POST'])
+def users():
     if not session.get('logged_in'):
         return render_template('login.html')
+    elif not session.get('user_isadmin'):
+        return render_template('error.html', message='For admin users only')
     else:
         if request.method == 'POST':
             # Get form information.
-            username = request.form.get("username") or None
-            email = request.form.get("email") or None
-            password = request.form.get("password") or None
-
-            print(username, email, password)
+            username = str(request.form.get("username")) or None
+            email = str(request.form.get("email")) or None
+            password = str(request.form.get("password")) or None
 
             if all(v is not None for v in [username, email, password]):
                 db.execute("INSERT INTO users (name, email, password) VALUES (:username, :email, :password)",
                 {"username": username, "email": email, "password": password})
                 db.commit()
                 users = db.execute("SELECT * FROM users").fetchall()
-                return render_template("admin.html", users=users)
+                return render_template("users.html", users=users)
             else:
                 message = "No empty field"
                 users = db.execute("SELECT * FROM users").fetchall()
-                return render_template("admin.html", users=users, message=message)
+                return render_template("users.html", users=users, message=message)
         else:
             users = db.execute("SELECT * FROM users").fetchall()
-            return render_template("admin.html", users=users)
+            nb_users = len(users)
+            message = f'Found {nb_users} users'
+            return render_template("users.html", users=users, message=message)

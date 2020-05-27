@@ -31,7 +31,7 @@
       {% for review in reviews %}
       <li class="list-group-item">
           <h5 class="card-title">{{ review.name }} - rating:{{ review.rating }}</h5>
-          <p class="card-text"><small class="text-muted">Posted {{ review.date }}</small></p>
+          <p class="card-text"><small class="text-muted">Posted on {{ review.date }}</small></p>
           <p class="card-text break">{{ review.content }}</p>
           {% if review.name == user_name %}
           <form action="{{ url_for('delete_review') }}" method="post">
