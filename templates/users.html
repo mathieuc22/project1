@@ -15,7 +15,7 @@
             <th scope="col">User id</th>
             <th scope="col">Username</th>
             <th scope="col">Email</th>
-            <th scope="col">Password</th>
+            <th scope="col">Admin</th>
             <th scope="col">Reviews</th>
             <th scope="col">Action</th>
         </tr>
@@ -26,12 +26,12 @@
             <td>{{ user.id }}</td>
             <td>{{ user.name }}</td>
           <td>{{ user.email }}</td>
-          <td>{{ user.password }}</td>
+          <td><input type="checkbox" disabled="disabled" {{ user.isadmin | replace("True","checked") }} /></td>
           <td><a href="{{url_for('reviews_by_user', user_id=user.id)}}">Reviews</a></td>
           <td>
             <form action="{{ url_for('delete_user') }}" method="post">
               <input type=hidden value="{{ user.name }}" name=user_to_delete />
-              <button class="btn btn-primary btn-sm">Delete user</button>
+              <button class="btn btn-primary btn-sm">Delete</button>
             </form>
           </td>
         </tr>
@@ -41,7 +41,7 @@
 
     <h2>Add new User</h2>
     <form class="needs-validation" action="{{ url_for('users') }}" method="post" novalidate>
-      <div class="form-row">
+      <div class="form-row align-items-center">
         <div class="col-auto">
           <input type="text" class="form-control mb-2" name="username" placeholder="Username" required>
           <div class="invalid-feedback">
@@ -61,7 +61,15 @@
           </div>
         </div>
         <div class="col-auto">
-          <button class="btn btn-primary" type="submit">Add a user</button>
+          <div class="form-check mb-2">
+            <input class="form-check-input" type="checkbox">
+            <label class="form-check-label">
+              Is admin
+            </label>
+          </div>
+        </div>
+        <div class="col-auto">
+          <button class="btn btn-primary mb-2" type="submit">Add a user</button>
         </div>
       </div>
     </form>

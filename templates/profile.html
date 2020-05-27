@@ -1,0 +1,25 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Profile
+{% endblock %}
+
+{% block body %}
+    <h1>Profile</h1>
+
+    <p>{{ message }}</p>
+
+        <ul>
+          <li>{{user.name}}</li>
+          <li>{{user.email}}</li>
+        </ul>
+    {% for review in reviews %}
+        <ul>
+          <li>{{review.rating}}</li>
+          <li>{{review.content}}</li>
+          <li>{{review.title}}</li>
+          <li>{{review.date}}</li>
+        </ul>
+    {% endfor %}
+
+{% endblock %}

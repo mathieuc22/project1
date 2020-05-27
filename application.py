@@ -53,9 +53,10 @@ def register():
                 db.commit()
                 logged_in = db.execute("SELECT * FROM users WHERE LOWER(name) = LOWER(:username)",
                     {"username": username}).fetchone()
-                session['logged_in'] = True
-                session['user_id'] = logged_in[0]
-                session['user_name'] = logged_in[1]
+                session['logged_in'] = logged_in
+                session['user_id'] = logged_in.id
+                session['user_name'] = logged_in.name
+                session['user_isadmin'] = logged_in.isadmin
                 #redirect to home
                 flash("Registration Successful. Your are logged in.")
                 return render_template("index.html")
@@ -84,7 +85,7 @@ def login():
                 session['user_isadmin'] = logged_in.isadmin
             else:
                  flash("Please try again or register.")
-                 return render_template("login.html") 
+                 return render_template("login.html")
             return redirect(url_for('index'))
         else:
             return redirect(url_for('index'))
@@ -100,7 +101,7 @@ def delete_user():
     db.execute("DELETE FROM users WHERE name = :user_to_delete",
         {"user_to_delete": user_to_delete})
     db.commit()
-    return admin()
+    return redirect(url_for('users'))
 
 @app.route("/books", methods=['GET', 'POST'])
 def books():
@@ -284,3 +285,16 @@ def users():
             nb_users = len(users)
             message = f'Found {nb_users} users'
             return render_template("users.html", users=users, message=message)
+
+@app.route("/profile")
+def profile():
+    if not session.get('logged_in'):
+        return render_template('login.html')
+    else:
+        user_id = str(session.get("user_id")) or None
+
+        user = db.execute("SELECT * FROM users WHERE id = :user_id", {"user_id": user_id}).fetchone()
+
+        reviews = db.execute("SELECT reviews.id, to_char(reviews.date, 'DD/MM/YY') as date, reviews.rating, reviews.content, reviews.user_id, users.name, books.title,  books.isbn FROM reviews JOIN users ON users.id = reviews.user_id JOIN books ON books.isbn = reviews.isbn WHERE reviews.user_id = :user_id", {"user_id": user_id}).fetchall()
+
+        return render_template("profile.html", user=user, reviews=reviews)
