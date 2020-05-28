@@ -7,31 +7,26 @@
 {% block body %}
     <h1>Review a book</h1>
 
-
     <p>{{ message }}</p>
-
-    <table class="table">
-      <thead>
-        <tr>
-          <th scope="col">Cover</th>
-          <th scope="col">ISBN</th>
-          <th scope="col">Title</th>
-          <th scope="col">Author</th>
-          <th scope="col">Date</th>
-        </tr>
-      </thead>
-      <tbody>
+    <div class="row row-cols-2 row-cols-sm-4 row-cols-md-5">
         {% for book in books %}
-        <tr>
-          <td>  <img src="http://covers.openlibrary.org/b/isbn/{{ book.isbn }}-S.jpg" /></td>
-          <th scope="row"><a href="{{ url_for('book', book_isbn=book.isbn) }}">ISBN {{ book.isbn }}
-          </a></th>
-          <td>{{ book.title }}</td>
-          <td><a href="{{ url_for('author', author=book.author) }}">{{book.author}}</a></td>
-          <td><a href="{{ url_for('year', year=book.year) }}">{{book.year}}</a></td>
-        </tr>
+        <div class="col">
+          <div class="card border-light text-center mx-n2 px-0">
+            <a href="{{ url_for('book', book_isbn=book.isbn) }}">
+              <img src="http://covers.openlibrary.org/b/isbn/{{ book.isbn }}-M.jpg" class="card-img-top" alt="{{ book.title }}">
+            </a>
+            <div class="card-body">
+              <h7 class="card-title"><a href="{{ url_for('book', book_isbn=book.isbn) }}">{{ book.title }}</a></h7>
+              <p class="card-text">
+                <small>
+                  <a href="{{ url_for('author', author=book.author) }}">{{book.author}}</a> - <a href="{{ url_for('year', year=book.year) }}">{{book.year}}</a>
+              </small>
+              </p>
+            </div>
+          </div>
+        </div>
         {% endfor %}
-      </tbody>
-    </table>
+      </div>
+
 
 {% endblock %}
