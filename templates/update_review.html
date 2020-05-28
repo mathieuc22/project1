@@ -5,9 +5,11 @@
 {% endblock %}
 
 {% block body %}
-    <h1>Update review</h1>
-    <a href="{{ url_for('book', book_isbn=review.isbn) }}">Go back to {{review.title}}</a>
+  <h1>Update review</h1>
+  <h2>Book: <a href="{{ url_for('book', book_isbn=review.isbn) }}">{{review.title}}</a></h2>
+  <h2>User: <a href="{{ url_for('book', book_isbn=review.name) }}">{{review.name}}</a></h2>
 
+  <div class="container dd">
     <form class="needs-validation" action="{{ url_for('update_review', review_id=review.id) }}" method="post" novalidate>
       <input type = hidden class="form-control" name="isbn" placeholder="ISBN" value={{ review.isbn }}>
       <div class="form-group">
@@ -23,8 +25,11 @@
           Please add content.
         </div>
       </div>
-        <button class="btn btn-primary" type="submit">Update the review</button>
-
+      <button class="btn btn-primary btn-block" type="submit">Update</button>
     </form>
-
+    <form action="{{ url_for('delete_review') }}" method="post">
+      <input type=hidden value="{{ review.isbn }}" name=book_isbn />
+      <button class="btn btn-danger btn-block mt-2" type="submit">Delete</button>
+    </form>
+  </div>
 {% endblock %}

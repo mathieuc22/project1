@@ -4,6 +4,10 @@ CREATE TABLE users (
     name VARCHAR NOT NULL,
     email VARCHAR NOT NULL
 );
+ALTER TABLE table_name
+ADD COLUMN isadmin group boolean false;
+
+
 
 CREATE TABLE reviews (
     id SERIAL PRIMARY KEY,

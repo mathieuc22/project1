@@ -1,7 +1,8 @@
 import os
 import requests
+import math
 
-from flask import Flask, render_template, request, session, flash, redirect, url_for
+from flask import Flask, render_template, request, session, flash, redirect, url_for,jsonify
 from flask_session import Session
 from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
@@ -104,33 +105,49 @@ def delete_user():
     return redirect(url_for('users'))
 
 @app.route("/books", methods=['GET', 'POST'])
-def books():
+@app.route("/books/<int:page>", methods=['GET', 'POST'])
+def books(page=1):
     if not session.get('logged_in'):
         return render_template('login.html')
     else:
+        perpage=200
+        startat=page*perpage-200
         if request.method == 'POST':
             search = request.form.get("search")
-            print(search)
-
-            # Search SQL
-            books = db.execute("SELECT * FROM books WHERE LOWER(title) LIKE LOWER(:search) OR  LOWER(author) LIKE LOWER(:search) OR  LOWER(isbn) LIKE LOWER(:search) OR  CAST(year AS TEXT) LIKE :search",
-                    {"search": '%'+search+'%'}).fetchall()
-            nb_books = len(books)
-
-            session['books'] = books
-
-            if nb_books == 0:
-                message = 'No book found'
-            else:
-                message = f'Found {nb_books} book(s)'
-            return render_template("books.html", books=books, search=search, message=message)
+            session['search'] = search
         else:
-            books = session.get('books') or None
-            if books is None:
-                books = db.execute("SELECT * FROM books").fetchall()
-            nb_books = len(books)
+            search = session.get('search')
+
+        # Search SQL
+        count = db.execute("SELECT count(*) as nb FROM books WHERE LOWER(title) LIKE LOWER(:search) OR  LOWER(author) LIKE LOWER(:search) OR  LOWER(isbn) LIKE LOWER(:search) OR  CAST(year AS TEXT) LIKE :search",
+            {"search": '%'+search+'%'}).fetchone()
+        nb_books = count.nb
+
+        if nb_books == 0:
+            nb_pages = 0
+            message = 'No book found'
+        else:
+            books = db.execute("SELECT * FROM books WHERE LOWER(title) LIKE LOWER(:search) OR  LOWER(author) LIKE LOWER(:search) OR  LOWER(isbn) LIKE LOWER(:search) OR  CAST(year AS TEXT) LIKE :search ORDER BY isbn LIMIT :perpage OFFSET :startat",
+                {"search": '%'+search+'%', "perpage": perpage, "startat": startat}).fetchall()
+            nb_pages = math.ceil(nb_books/perpage)
             message = f'Found {nb_books} book(s)'
-            return render_template("books.html", message=message, books=books)
+        return render_template("books.html", books=books, search=search, message=message, nb_pages=nb_pages, page=page)
+
+@app.route("/books/author/<string:author>")
+def author(author):
+    if not session.get('logged_in'):
+        return render_template('login.html')
+    else:
+        session['search'] = author
+        return redirect(url_for('books'))
+
+@app.route("/books/year/<int:year>")
+def year(year):
+    if not session.get('logged_in'):
+        return render_template('login.html')
+    else:
+        session['search'] = str(year)
+        return redirect(url_for('books'))
 
 @app.route("/book/<string:book_isbn>", methods=["GET", "POST"])
 def book(book_isbn):
@@ -213,28 +230,8 @@ def update_review(review_id):
             db.commit()
             return redirect(url_for('book', book_isbn=book_isbn))
         else:
-            review = db.execute("SELECT reviews.id, reviews.date, reviews.rating, reviews.isbn, reviews.content, books.title FROM reviews JOIN books ON books.isbn = reviews.isbn WHERE id = :review_id AND user_id = :user_id", {"review_id": review_id, "user_id": user_id}).fetchone()
+            review = db.execute("SELECT reviews.id, reviews.date, reviews.rating, reviews.isbn, reviews.content, books.title, users.name FROM reviews JOIN books ON books.isbn = reviews.isbn JOIN users ON users.id = reviews.user_id WHERE reviews.id = :review_id AND reviews.user_id = :user_id", {"review_id": review_id, "user_id": user_id}).fetchone()
             return render_template('update_review.html', review=review)
-
-@app.route("/books/author/<string:author>")
-def author(author):
-    if not session.get('logged_in'):
-        return render_template('login.html')
-    else:
-        books = db.execute("SELECT * FROM books WHERE LOWER(author) = LOWER(:author)", {"author": author}).fetchall()
-        nb_books = len(books)
-        message = f'Found {nb_books} book(s)'
-        return render_template("books.html", message=message, books=books)
-
-@app.route("/books/year/<int:year>")
-def year(year):
-    if not session.get('logged_in'):
-        return render_template('login.html')
-    else:
-        books = db.execute("SELECT * FROM books WHERE year = :year", {"year": year}).fetchall()
-        nb_books = len(books)
-        message = f'Found {nb_books} book(s)'
-        return render_template("books.html", message=message, books=books)
 
 @app.route("/reviews")
 def reviews():
@@ -298,3 +295,27 @@ def profile():
         reviews = db.execute("SELECT reviews.id, to_char(reviews.date, 'DD/MM/YY') as date, reviews.rating, reviews.content, reviews.user_id, users.name, books.title,  books.isbn FROM reviews JOIN users ON users.id = reviews.user_id JOIN books ON books.isbn = reviews.isbn WHERE reviews.user_id = :user_id", {"user_id": user_id}).fetchall()
 
         return render_template("profile.html", user=user, reviews=reviews)
+
+@app.route("/api/<string:book_isbn>")
+def api(book_isbn):
+    book = db.execute("SELECT * FROM books WHERE isbn = :book_isbn", {"book_isbn": book_isbn}).fetchone()
+    if book is None:
+        return jsonify({"error": "Invalid ISBN"}), 422
+
+    # Get reviews from goodread API
+    res = requests.get("https://www.goodreads.com/book/review_counts.json",
+                    params={"key": "GtG9odDoZNEWxekOhsmMA", "isbns": book_isbn})
+    if res.status_code != 200:
+        raise Exception("ERROR: API request unsuccessful.")
+    data = res.json()
+    ratings_count = data["books"][0]["ratings_count"]
+    average_rating = data["books"][0]["average_rating"]
+
+    return jsonify({
+            "title": book.title,
+            "author": book.author,
+            "year": book.year,
+            "isbn": book.isbn,
+            "review_count": average_rating,
+            "average_score": ratings_count
+        })
