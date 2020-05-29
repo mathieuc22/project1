@@ -36,15 +36,13 @@ def register():
         return render_template("index.html")
     else:
         if request.method == 'POST':
-
-            # Get form information.
+            # Get form information
             username = str(request.form.get("username")) or None
             email = str(request.form.get("email")) or None
             password = str(request.form.get("password")) or None
-
+            # Check if user exists
             user = db.execute("SELECT * FROM users WHERE LOWER(name) = LOWER(:username)",
                 {"username": username}).fetchone()
-
             if user:
                 flash("You're already in our system. Please login.")
                 return render_template("login.html")
@@ -54,11 +52,12 @@ def register():
                 db.commit()
                 logged_in = db.execute("SELECT * FROM users WHERE LOWER(name) = LOWER(:username)",
                     {"username": username}).fetchone()
+                # Store info on the session
                 session['logged_in'] = logged_in
                 session['user_id'] = logged_in.id
                 session['user_name'] = logged_in.name
                 session['user_isadmin'] = logged_in.isadmin
-                #redirect to home
+                # Redirect to home
                 flash("Registration Successful. Your are logged in.")
                 return render_template("index.html")
             else:
@@ -74,20 +73,21 @@ def login():
         return render_template("index.html")
     else:
         if request.method == 'POST':
-            username = str(request.form.get("username"))
-            password = str(request.form.get("password"))
+            # Get form information
+            username = str(request.form.get("username")) or None
+            password = str(request.form.get("password")) or None
+            # Check if info are good
             logged_in = db.execute("SELECT * FROM users WHERE LOWER(name) = LOWER(:username) AND  password = :password",
                     {"username": username, "password": password}).fetchone()
-
             if logged_in:
                 session['logged_in'] = logged_in
                 session['user_id'] = logged_in.id
                 session['user_name'] = logged_in.name
                 session['user_isadmin'] = logged_in.isadmin
+                return redirect(url_for('index'))
             else:
                  flash("Please try again or register.")
                  return render_template("login.html")
-            return redirect(url_for('index'))
         else:
             return redirect(url_for('index'))
 
@@ -98,9 +98,9 @@ def logout():
 
 @app.route("/delete_user", methods=['POST'])
 def delete_user():
-    user_to_delete = str(request.form.get("user_to_delete"))
-    db.execute("DELETE FROM users WHERE name = :user_to_delete",
-        {"user_to_delete": user_to_delete})
+    user_id = request.args.get('user_id')
+    db.execute("DELETE FROM users WHERE id = :user_id",
+        {"user_id": user_id})
     db.commit()
     return redirect(url_for('users'))
 
@@ -219,8 +219,18 @@ def update_review(review_id):
     if not session.get('logged_in'):
         return render_template('login.html')
     else:
+        
+        # Make sure review exists.
+        review = db.execute("SELECT * FROM reviews WHERE id = :id", {"id": review_id}).fetchone()
+        if review is None:
+            return render_template("error.html", message="No such review.")
+        
+        book_isbn = review.isbn
         user_id = session.get('user_id')
-        if request.method == 'POST':
+
+        if user_id != review.user_id:
+            return render_template("error.html", message="Not your review.")
+        elif request.method == 'POST':
             book_isbn = request.form.get("isbn") or None
             rating = request.form.get("rating") or None
             content = request.form.get("content") or None
@@ -239,9 +249,13 @@ def reviews():
         return render_template('login.html')
     else:
         reviews = db.execute("SELECT reviews.id, to_char(reviews.date, 'DD/MM/YY') as date, reviews.rating, reviews.content, reviews.user_id, users.name, books.title,  books.isbn FROM reviews JOIN users ON users.id = reviews.user_id JOIN books ON books.isbn = reviews.isbn").fetchall()
-        nb_reviews = len(reviews)
-        message = f'Found {nb_reviews} reviews'
-        return render_template("reviews.html", message=message, reviews=reviews)
+        # Check if user has riviews
+        if reviews:
+            nb_reviews = len(reviews) or None
+            message = f'Found {nb_reviews} reviews'
+            return render_template("reviews.html", message=message, reviews=reviews)
+        else:
+            return render_template("error.html", message="No review for this user.")
 
 @app.route("/reviews/<int:user_id>")
 def reviews_by_user(user_id):
@@ -249,10 +263,14 @@ def reviews_by_user(user_id):
         return render_template('login.html')
     else:
         reviews = db.execute("SELECT reviews.id, to_char(reviews.date, 'DD/MM/YY') as date, reviews.rating, reviews.content, reviews.user_id, users.name, books.title,  books.isbn FROM reviews JOIN users ON users.id = reviews.user_id JOIN books ON books.isbn = reviews.isbn WHERE reviews.user_id = :user_id", {"user_id": user_id}).fetchall()
-        username = db.execute("SELECT users.name FROM users JOIN reviews ON users.id = reviews.user_id WHERE reviews.user_id = :user_id", {"user_id": user_id}).fetchone()
-        nb_reviews = len(reviews)
-        message = f'Found {nb_reviews} reviews'
-        return render_template("reviews.html", username=username.name, message=message, reviews=reviews)
+         # Check if user has riviews
+        if reviews:
+            username = db.execute("SELECT users.name FROM users JOIN reviews ON users.id = reviews.user_id WHERE reviews.user_id = :user_id", {"user_id": user_id}).fetchone()
+            nb_reviews = len(reviews) or None
+            message = f'Found {nb_reviews} reviews'
+            return render_template("reviews.html", username=username.name, message=message, reviews=reviews)
+        else:
+            return render_template("error.html", message="No review for this user.")
 
 @app.route("/users", methods=['GET', 'POST'])
 def users():
@@ -283,22 +301,36 @@ def users():
             message = f'Found {nb_users} users'
             return render_template("users.html", users=users, message=message)
 
-@app.route("/profile")
-def profile():
+@app.route("/user/<int:user_id>", methods=['GET', 'POST'])
+def profile(user_id):
     if not session.get('logged_in'):
         return render_template('login.html')
     else:
-        user_id = str(session.get("user_id")) or None
+        current_user_id = session.get("user_id") or None
+        if user_id != current_user_id:
+            return render_template("error.html", message="Not you.")
 
-        user = db.execute("SELECT * FROM users WHERE id = :user_id", {"user_id": user_id}).fetchone()
+        reviews = db.execute("SELECT reviews.id, to_char(reviews.date, 'DD/MM/YY') as date, reviews.rating, reviews.content, reviews.user_id, users.name, books.title,  books.isbn FROM reviews JOIN users ON users.id = reviews.user_id JOIN books ON books.isbn = reviews.isbn WHERE reviews.user_id = :user_id",
+                {"user_id": user_id}).fetchall()
+        if request.method == 'POST':
+            username = request.form.get("username") or None
+            email = request.form.get("email") or None
+            password = request.form.get("password") or None
 
-        reviews = db.execute("SELECT reviews.id, to_char(reviews.date, 'DD/MM/YY') as date, reviews.rating, reviews.content, reviews.user_id, users.name, books.title,  books.isbn FROM reviews JOIN users ON users.id = reviews.user_id JOIN books ON books.isbn = reviews.isbn WHERE reviews.user_id = :user_id", {"user_id": user_id}).fetchall()
-
-        return render_template("profile.html", user=user, reviews=reviews)
+            db.execute("UPDATE users SET name = :username, email = :email, password = :password WHERE id = :user_id",
+                {"username": username, "email": email, "password": password, "user_id": user_id})
+            db.commit()
+            user = db.execute("SELECT * FROM users WHERE id = :user_id", {"user_id": user_id}).fetchone()
+            flash("You've updated your infos")
+            return render_template("profile.html", user=user, reviews=reviews)
+        else:
+            user = db.execute("SELECT * FROM users WHERE id = :user_id", {"user_id": user_id}).fetchone()
+            return render_template("profile.html", user=user, reviews=reviews)
 
 @app.route("/api/<string:book_isbn>")
 def api(book_isbn):
-    book = db.execute("SELECT * FROM books WHERE isbn = :book_isbn", {"book_isbn": book_isbn}).fetchone()
+    book = db.execute("SELECT * FROM books WHERE isbn = :book_isbn",
+            {"book_isbn": book_isbn}).fetchone()
     if book is None:
         return jsonify({"error": "Invalid ISBN"}), 422
 
