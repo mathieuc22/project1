@@ -7,11 +7,9 @@
 {% block body %}
   <h1>Update review</h1>
   <h2>Book: <a href="{{ url_for('book', book_isbn=review.isbn) }}">{{review.title}}</a></h2>
-  <h2>User: <a href="{{ url_for('book', book_isbn=review.name) }}">{{review.name}}</a></h2>
 
   <div class="container dd">
     <form class="needs-validation" action="{{ url_for('update_review', review_id=review.id) }}" method="post" novalidate>
-      <input type = hidden class="form-control" name="isbn" placeholder="ISBN" value={{ review.isbn }}>
       <div class="form-group">
         <label>Rating</label>
         <select class="form-control" name="rating" required>

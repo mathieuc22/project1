@@ -13,28 +13,53 @@
     <nav aria-label="Page navigation example">
       <ul class="pagination">
         {% if page==1 %}
-        <li class="page-item disabled"><a class="page-link" href="#">Previous</a></li>
+          <li class="page-item disabled"><a class="page-link" href="#">Previous</a></li>
         {% else %}
-        <li class="page-item"><a class="page-link" href="{{ url_for('books', page=page-1) }}">Previous</a></li>
+          <li class="page-item"><a class="page-link" href="{{ url_for('books', page=page-1) }}">Previous</a></li>
         {% endif %}
-        {% for nb in range(0, nb_pages): %}
-        <li class="page-item {% if request.path == url_for('books', page=nb+1) or request.path == url_for('books') and nb == 0 %} active {% endif %}"><a class="page-link" href="{{ url_for('books', page=nb+1) }}">{{nb+1}}</a></li>
-        {% endfor %}
-        {% if page==nb_pages %}
-        <li class="page-item disabled"><a class="page-link" href="#">Next</a></li>
+
+        {% if nb_pages<7 %}
+
+          {% for nb in range(0, nb_pages): %}
+            <li class="page-item {% if request.path == url_for('books', page=nb+1) or request.path == url_for('books') and nb == 0 %} active {% endif %}"><a class="page-link" href="{{ url_for('books', page=nb+1) }}">{{nb+1}}</a></li>
+          {% endfor %}
+
+        {% elif page<4 %}
+
+          {% for nb in range(0, 7): %}
+            <li class="page-item {% if request.path == url_for('books', page=nb+1) or request.path == url_for('books') and nb == 0 %} active {% endif %}"><a class="page-link" href="{{ url_for('books', page=nb+1) }}">{{nb+1}}</a></li>
+          {% endfor %}
+
+        {% elif (nb_pages-3)<page<=nb_pages %}
+
+          {% for nb in range(nb_pages-7, nb_pages): %}
+            <li class="page-item {% if request.path == url_for('books', page=nb+1) or request.path == url_for('books') and nb == 0 %} active {% endif %}"><a class="page-link" href="{{ url_for('books', page=nb+1) }}">{{nb+1}}</a></li>
+          {% endfor %}
+
         {% else %}
-        <li class="page-item"><a class="page-link" href="{{ url_for('books', page=page+1) }}">Next</a></li>
+
+          {% for nb in range(page-4, page+3): %}
+            <li class="page-item {% if request.path == url_for('books', page=nb+1) or request.path == url_for('books') and nb == 0 %} active {% endif %}"><a class="page-link" href="{{ url_for('books', page=nb+1) }}">{{nb+1}}</a></li>
+          {% endfor %}
+
+        {% endif %}
+
+
+        {% if page==nb_pages %}
+          <li class="page-item disabled"><a class="page-link" href="#">Next</a></li>
+        {% else %}
+          <li class="page-item"><a class="page-link" href="{{ url_for('books', page=page+1) }}">Next</a></li>
         {% endif %}
       </ul>
     </nav>
     {% endif %}
-    
+
     <div class="row row-cols-2 row-cols-sm-4 row-cols-md-5">
         {% for book in books %}
         <div class="col">
           <div class="card border-light text-center mx-n2 px-0">
             <a href="{{ url_for('book', book_isbn=book.isbn) }}">
-              <img src="http://covers.openlibrary.org/b/isbn/{{ book.isbn }}-M.jpg" class="card-img-top" alt="{{ book.title }}">
+              <img src="http://covers.openlibrary.org/b/isbn/{{ book.isbn }}-M.jpg" class="card-img-top shadow-sm book" alt="{{ book.title }}">
             </a>
             <div class="card-body">
               <h7 class="card-title"><a href="{{ url_for('book', book_isbn=book.isbn) }}">{{ book.title }}</a></h7>

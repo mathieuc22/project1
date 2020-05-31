@@ -36,33 +36,11 @@
   </form>
 
   <p class="h2 mt-4">My Reviews</p>
-  <!-- List group -->
-  <div class="row">
-    <div class="col-4">
-      <div class="list-group" id="myList" role="tablist">
-        <a class="list-group-item list-group-item-action active" data-toggle="list" href="#books" role="tab">Books</a>
-        {% for review in reviews %}
-        <a class="list-group-item list-group-item-action" data-toggle="list" href="#id{{review.id}}" role="tab">{{review.title}}</a>
-        {% endfor %}
-      </div>
+
+    <div class="list-group">
+      {% for review in reviews %}
+      <a href="{{ url_for('update_review', review_id=review.id) }}" class="list-group-item list-group-item-action">{{review.title}}</a>
+      {% endfor %}
     </div>
-    <!-- Tab panes -->
-    <div class="col-8">
-      <div class="tab-content border rounded p-3">
-        <div class="tab-pane active" id="books" role="tabpanel">
-          <p class="break mb-1"><em>Pick a book in the list to display the review</em>
-          </p>
-        </div>
-        {% for review in reviews %}
-        <div class="tab-pane" id="id{{review.id}}" role="tabpanel">
-          <h5 class="mb-1"><a href="{{ url_for('book', book_isbn=review.isbn) }}">{{review.title}}</a></h5>
-          <small>Rated {{review.rating}} the {{review.date}}</small>
-          <p class="break mb-1">{{review.content}}</p>
-          <a class="btn btn-primary btn-sm" href="{{ url_for('update_review', review_id=review.id) }}" role="button">Modify</a>
-        </div>
-        {% endfor %}
-      </div>
-    </div>
-  </div>
 
   {% endblock %}

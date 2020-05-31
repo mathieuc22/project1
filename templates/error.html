@@ -5,8 +5,6 @@
 {% endblock %}
 
 {% block body %}
-    <h1>Error</h1>
-    <a href="javascript:history.back()">Go Back</a>
-
-    {{ message }}
+    <h1>{{ message }}</h1>
+    <p><a href="javascript:history.back()">Go Back</a> or <a href="{{ url_for('index') }}">Home</a></p
 {% endblock %}
