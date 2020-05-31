@@ -5,19 +5,21 @@
 {% endblock %}
 
 {% block body %}
-    <h1>Review a book</h1>
 
-    <div class="bg-img">
-      <form action="{{ url_for('books') }}" method="post" class="login">
 
-        <div class="input-group mb-3">
-          <input class="form-control" name="search" placeholder="Search by isbn, title, author or year">
-          <div class="input-group-append">
-            <button class="btn btn-outline-primary">Search</button>
+    <div class="jumbotron mt-4 text-white rounded">
+      <div class="col-md-6 p-4 p-md-5 bg-dark">
+        <h1 class="display-4 font-italic">Review a book</h1>
+        <p class="lead my-3">Search for a book, rate it, comment it!</p>
+        <form action="{{ url_for('books') }}" method="post">
+          <div class="input-group input-group-lg">
+            <input class="form-control" name="search" placeholder="Search by isbn, title, author or year">
+            <div class="input-group-append">
+              <button class="btn btn-light">Search</button>
+            </div>
           </div>
-        </div>
-
-      </form>
+        </form>
+      </div>
     </div>
 
 {% endblock %}

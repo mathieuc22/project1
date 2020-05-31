@@ -5,21 +5,64 @@
 {% endblock %}
 
 {% block body %}
-    <h1>Profile</h1>
+  <h1>Profile</h1>
 
-    <p>{{ message }}</p>
+  <p>{{ message }}</p>
 
-        <ul>
-          <li>{{user.name}}</li>
-          <li>{{user.email}}</li>
-        </ul>
-    {% for review in reviews %}
-        <ul>
-          <li>{{review.rating}}</li>
-          <li>{{review.content}}</li>
-          <li>{{review.title}}</li>
-          <li>{{review.date}}</li>
-        </ul>
-    {% endfor %}
+  <h2>My info</h2>
+  <form class="needs-validation" action="{{ url_for('profile', user_id=user.id) }}" method="POST" novalidate>
+    <div class="form-group">
+      <label for="username">Name</label>
+      <input type="username" class="form-control" name="username" id="username" value="{{user.name}}" required>
+      <div class="invalid-feedback">
+        Please choose a username.
+      </div>
+    </div>
+    <div class="form-group">
+      <label for="email">Email</label>
+      <input type="email" class="form-control" name="email" id="email" value="{{user.email}}" required>
+      <div class="invalid-feedback">
+        Please choose a email.
+      </div>
+    </div>
+    <div class="form-group">
+      <label for="password">Password</label>
+      <input type="password" class="form-control" name="password" id="password" value="{{user.password}}" required>
+      <div class="invalid-feedback">
+        Please choose a password.
+      </div>
+    </div>
+    <button type="submit" class="btn btn-primary">Update</button>
+  </form>
 
-{% endblock %}
+  <p class="h2 mt-4">My Reviews</p>
+  <!-- List group -->
+  <div class="row">
+    <div class="col-4">
+      <div class="list-group" id="myList" role="tablist">
+        <a class="list-group-item list-group-item-action active" data-toggle="list" href="#books" role="tab">Books</a>
+        {% for review in reviews %}
+        <a class="list-group-item list-group-item-action" data-toggle="list" href="#id{{review.id}}" role="tab">{{review.title}}</a>
+        {% endfor %}
+      </div>
+    </div>
+    <!-- Tab panes -->
+    <div class="col-8">
+      <div class="tab-content border rounded p-3">
+        <div class="tab-pane active" id="books" role="tabpanel">
+          <p class="break mb-1"><em>Pick a book in the list to display the review</em>
+          </p>
+        </div>
+        {% for review in reviews %}
+        <div class="tab-pane" id="id{{review.id}}" role="tabpanel">
+          <h5 class="mb-1"><a href="{{ url_for('book', book_isbn=review.isbn) }}">{{review.title}}</a></h5>
+          <small>Rated {{review.rating}} the {{review.date}}</small>
+          <p class="break mb-1">{{review.content}}</p>
+          <a class="btn btn-primary btn-sm" href="{{ url_for('update_review', review_id=review.id) }}" role="button">Modify</a>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  {% endblock %}

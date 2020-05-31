@@ -5,11 +5,7 @@
 {% endblock %}
 
 {% block body %}
-    <a href="{{ url_for('books') }}">Go back to results</a>
-    <div class="card my-3">
-      <div class="card-header">
-        Book Details
-      </div>
+    <div class="card my-3 border-0">
       <div class="row no-gutters">
         <div class="col-md-3">
           <img src="http://covers.openlibrary.org/b/isbn/{{ book.isbn }}-M.jpg" class="card-img" alt="{{ book.title }}">
@@ -27,7 +23,7 @@
           </div>
         </div>
       </div>
-      <div class="card-header">
+      <div class="card-header mt-2">
         Reviews
       </div>
       <ul class="list-group list-group-flush">
@@ -37,13 +33,7 @@
           <p class="card-text"><small class="text-muted">Posted on {{ review.date }}</small></p>
           <p class="card-text break">{{ review.content }}</p>
           {% if review.name == user_name %}
-          <form action="{{ url_for('delete_review') }}" method="post">
-            <div class="btn-group  btn-group-sm" role="group">
-              <input type=hidden value="{{ book.isbn }}" name=book_isbn />
-              <a class="btn btn-primary" href="{{ url_for('update_review', review_id=review.id) }}" role="button">Update</a>
-              <button class="btn btn-primary" type="submit">Delete</button>
-            </div>
-          </form>
+          <a class="btn btn-primary btn-sm" href="{{ url_for('update_review', review_id=review.id) }}" role="button">Update</a>
           {% endif %}
       </li>
       {% endfor %}
@@ -51,7 +41,7 @@
 
     {% if not review_by_user %}
 
-    <div class="card-header">
+    <div class="card-header mt-2">
       Make a review
     </div>
     <div class="card-body">

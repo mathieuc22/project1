@@ -27,7 +27,7 @@
               {{ session['user_name'] }}
             </a>
             <div class="dropdown-menu">
-              <a class="dropdown-item" href="{{ url_for('profile') }}">Profile</a>
+              <a class="dropdown-item" href="{{ url_for('profile', user_id=session['user_id']) }}">Profile</a>
               {% if session['user_isadmin'] %}
               <div class="dropdown-divider"></div>
               <h6 class="dropdown-header">Admin</h6>

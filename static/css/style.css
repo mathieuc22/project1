@@ -1,3 +1,7 @@
+* {
+  font-size: 100%;
+  font-family: Baskerville, Baskerville Old Face, Hoefler Text, Garamond, Times New Roman, serif; 
+ }
 
 .form-signin {
   width: 100%;
@@ -39,7 +43,7 @@
   white-space: pre-wrap;
 }
 
-.bg-img {
+.jumbotron {
   /* The image used */
   background-image: url('/static/images/books.jpg');
 
@@ -60,5 +64,4 @@
   max-width: 80%;
   margin: 20px;
   padding: 16px;
-  background-color: white;
 }
