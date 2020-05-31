@@ -15,12 +15,15 @@
           <img src="http://covers.openlibrary.org/b/isbn/{{ book.isbn }}-M.jpg" class="card-img" alt="{{ book.title }}">
         </div>
         <div class="col-md-8">
-          <div class="card-body">
+          <div class="card-body pt-0">
             <h5 class="card-title">{{ book.title }}</h5>
             <h6 class="card-subtitle"><a href="{{ url_for('author', author=book.author) }}">{{book.author}}</a> - <a href="{{ url_for('year', year=book.year) }}">{{book.year}}</a></h6>
             <p class="card-text"><small class="text-muted">ISBN: {{ book.isbn }}</small></p>
-            <p class="card-text">Number of ratings: {{ ratings_count }}
-            <br>Average rating: {{ average_rating }}</p>
+            <p class="card-text">
+            <b>Language: </b>{{language}}
+            <br><b>Description: </b><small>{{description}}</small>
+            <br><b>Number of ratings: </b>{{ ratings_count }}
+            <br><b>Average rating: </b>{{ average_rating }}</p>
           </div>
         </div>
       </div>

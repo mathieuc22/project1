@@ -143,6 +143,15 @@ def book(book_isbn):
         if book is None:
             return render_template("error.html", message="No such book.")
 
+        # Get reviews from googleapis
+        gapi = requests.get("https://www.googleapis.com/books/v1/volumes",
+                        params={"q": "isbn:"+book_isbn})
+        if gapi.status_code != 200:
+            raise Exception("ERROR: API request unsuccessful.")
+        gdata = gapi.json()
+        description = gdata["items"][0]["volumeInfo"]["description"]
+        language = gdata["items"][0]["volumeInfo"]["language"]
+
         # Get reviews from goodread API
         res = requests.get("https://www.goodreads.com/book/review_counts.json",
                         params={"key": "GtG9odDoZNEWxekOhsmMA", "isbns": book_isbn})
@@ -181,7 +190,9 @@ def book(book_isbn):
                         ratings_count=ratings_count,
                         average_rating=average_rating,
                         review_by_user=review_by_user,
-                        user_name=user_name
+                        user_name=user_name,
+                        description=description,
+                        language=language
                         )
 
 @app.route("/delete_review", methods=["POST"])
