@@ -2,7 +2,7 @@ import os
 import requests
 import math
 
-from flask import Flask, render_template, request, session, flash, redirect, url_for,jsonify
+from flask import Flask, render_template, request, session, flash, redirect, url_for, jsonify
 from flask_session import Session
 from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
@@ -179,8 +179,9 @@ def book(book_isbn):
             description=""
             language=""
         # Get reviews from goodread API
+        goodread_key = os.getenv("GR_KEY")
         res = requests.get("https://www.goodreads.com/book/review_counts.json",
-                        params={"key": "GtG9odDoZNEWxekOhsmMA", "isbns": book_isbn})
+                        params={"key": goodread_key, "isbns": book_isbn})
         if res.status_code != 200:
             raise Exception("ERROR: API request unsuccessful.")
         data = res.json()

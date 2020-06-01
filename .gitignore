@@ -1,5 +1,8 @@
 __pycache__
 *.py[cod]
+config.txt
+create.sql
+models.py
 
 bin/
 venv/
