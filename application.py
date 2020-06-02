@@ -59,7 +59,7 @@ def register():
                 session['user_isadmin'] = logged_in.isadmin
                 # Redirect to home
                 flash("Registration Successful. Your are logged in.")
-                return render_template("index.html")
+                return redirect(url_for('index'))
             else:
                 flash("Please correct data")
                 return render_template("register.html")
